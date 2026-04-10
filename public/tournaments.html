@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Tournaments - VoidGaming</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Poppins', sans-serif; background: #000000; color: white; position: relative; }
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: repeating-linear-gradient(45deg, rgba(255,215,0,0.03) 0px, rgba(255,215,0,0.03) 2px, transparent 2px, transparent 8px);
+            pointer-events: none;
+            z-index: 0;
+        }
+        nav { background: #000000; padding: 1rem 2rem; display: flex; justify-content: space-between; flex-wrap: wrap; border-bottom: 3px solid #FFD700; position: sticky; top: 0; z-index: 100; }
+        nav a { color: #FFD700; text-decoration: none; margin: 0 1rem; font-weight: bold; transition: all 0.3s ease; }
+        nav a:hover { color: #ffffff; text-shadow: 0 0 5px #FFD700; }
+        .container { max-width: 800px; margin: 2rem auto; padding: 0 1rem; position: relative; z-index: 1; }
+        h1 { font-size: 2rem; color: #FFD700; text-shadow: 2px 2px 0 #000; border-left: 5px solid #FFD700; padding-left: 1rem; margin-bottom: 1rem; }
+        .tournament-card { background: #0a0a0a; padding: 1rem; margin: 1rem 0; border: 2px solid #FFD700; }
+        input, select, textarea { width: 100%; padding: 0.75rem; margin: 0.5rem 0; background: #000; border: 2px solid #FFD700; color: #FFD700; font-family: monospace; }
+        input:focus, select:focus, textarea:focus { outline: none; border-color: #fff; }
+        button { background: #FFD700; color: #000; border: none; padding: 0.6rem 1.2rem; cursor: pointer; font-weight: 600; font-family: 'Poppins', sans-serif; transition: all 0.3s ease; }
+        button:hover { background: #fff; transform: scale(1.05); box-shadow: 0 0 20px rgba(255,215,0,0.6); }
+        .status { display: inline-block; padding: 0.25rem 0.75rem; font-size: 0.8rem; font-weight: bold; }
+        .upcoming { background: #ff9800; color: #000; }
+        .create-form { background: #0a0a0a; border: 2px solid #FFD700; padding: 1.5rem; margin-top: 2rem; }
+        .create-form h3 { color: #FFD700; margin-bottom: 1rem; }
+        .warning { background: rgba(255,152,0,0.3); border: 1px solid #ff9800; padding: 1rem; margin: 1rem 0; text-align: center; }
+        .message { padding: 0.5rem; margin: 0.5rem 0; text-align: center; }
+        .success { background: rgba(76,175,80,0.3); border: 1px solid #4caf50; color: #4caf50; }
+        .error { background: rgba(255,68,68,0.3); border: 1px solid #ff4444; color: #ff4444; }
+        @media (max-width: 600px) { nav { flex-direction: column; text-align: center; gap: 1rem; } }
+    </style>
+</head>
+<body>
+    <nav>
+        <div style="font-size:1.5rem;"></div>
+        <div>
+            <a href="/">Home</a>
+            <a href="/games">Games</a>
+            <a href="/game-reviews">Reviews</a>
+            <a href="/game-tournaments">Tournaments</a>
+            <a href="/profile">👤 Profile</a>
+            <span id="admin-link" style="display:none;"><a href="/admin">Admin</a></span>
+            <span id="auth-link"></span>
+        </div>
+    </nav>
+
+    <div class="container">
+        <h1> TOURNAMENTS</h1>
+        <div id="tournamentsList">Loading...</div>
+        
+        <div id="createForm" class="create-form" style="display:none;">
+            <h3> CREATE TOURNAMENT</h3>
+            <input type="text" id="name" placeholder="Tournament Name">
+            <select id="gameId"><option value="">Select Game</option></select>
+            <input type="date" id="startDate">
+            <input type="date" id="endDate">
+            <input type="text" id="prizePool" placeholder="Prize Pool">
+            <textarea id="description" rows="2" placeholder="Description"></textarea>
+            <button onclick="createTournament()">CREATE</button>
+            <div id="createMsg"></div>
+        </div>
+        
+        <div id="loginWarning" class="warning" style="display:none;">
+            ⚠️ Please <a href="/login" style="color:#FFD700;">login</a> to join tournaments
+        </div>
+        
+        <div id="noPermission" class="warning" style="display:none;">
+            ⚠️ Only <strong>Admin</strong> or <strong>Organiser</strong> can create tournaments
+        </div>
+    </div>
+
+    <script>
+        let currentUser = null;
+        
+        async function checkLogin() {
+            try {
+                const res = await fetch('/check-session');
+                const data = await res.json();
+                const authLink = document.getElementById('auth-link');
+                const adminLink = document.getElementById('admin-link');
+                const loginWarning = document.getElementById('loginWarning');
+                const createForm = document.getElementById('createForm');
+                const noPermission = document.getElementById('noPermission');
+                
+                if (data.loggedIn) {
+                    currentUser = data;  // ← IMPORTANT: Set currentUser
+                    authLink.innerHTML = ` ${data.username} | <a href="#" onclick="logout()">Logout</a>`;
+                    
+                    if (data.role === 'admin' && adminLink) {
+                        adminLink.style.display = 'inline';
+                    }
+                    
+                    // Hide login warning
+                    if (loginWarning) loginWarning.style.display = 'none';
+                    
+                    // Show create form only for Admin or Organiser
+                    if (data.role === 'admin' || data.role === 'organiser') {
+                        if (createForm) createForm.style.display = 'block';
+                        if (noPermission) noPermission.style.display = 'none';
+                        loadGamesForSelect();
+                    } else {
+                        if (createForm) createForm.style.display = 'none';
+                        if (noPermission) noPermission.style.display = 'block';
+                    }
+                } else {
+                    currentUser = null;
+                    authLink.innerHTML = '<a href="/login"> Login</a>';
+                    if (adminLink) adminLink.style.display = 'none';
+                    if (loginWarning) loginWarning.style.display = 'block';
+                    if (createForm) createForm.style.display = 'none';
+                    if (noPermission) noPermission.style.display = 'none';
+                }
+            } catch(e) {
+                console.log(e);
+            }
+        }
+        
+        async function logout() { 
+            await fetch('/logout', { method: 'POST' }); 
+            window.location.href = '/'; 
+        }
+        
+        async function loadGamesForSelect() {
+            const res = await fetch('/api/games');
+            const games = await res.json();
+            const select = document.getElementById('gameId');
+            select.innerHTML = '<option value="">Select Game</option>' + games.map(g => `<option value="${g._id}">${g.title}</option>`).join('');
+        }
+        
+        async function loadTournaments() {
+            try {
+                const res = await fetch('/api/tournaments');
+                const tournaments = await res.json();
+                const container = document.getElementById('tournamentsList');
+                
+                if (tournaments.length === 0) { 
+                    container.innerHTML = '<p>No tournaments yet. Check back later!</p>'; 
+                    return; 
+                }
+                
+                container.innerHTML = tournaments.map(t => `
+                    <div class="tournament-card">
+                        <h3> ${t.name}</h3>
+                        <p> Game: ${t.gameId?.title || 'Unknown'}</p>
+                        <p> Prize: ${t.prizePool || 'TBD'}</p>
+                        <p> Start: ${new Date(t.startDate).toLocaleDateString()}</p>
+                        <p> End: ${new Date(t.endDate).toLocaleDateString()}</p>
+                        <p> ${t.description || 'No description'}</p>
+                        <p> Participants: ${t.participants?.length || 0}</p>
+                        <span class="status upcoming">${t.status}</span>
+                        ${currentUser && t.status === 'upcoming' ? `<button onclick="joinTournament('${t._id}')" style="margin-top:0.5rem;">JOIN</button>` : ''}
+                    </div>
+                `).join('');
+            } catch(e) {
+                document.getElementById('tournamentsList').innerHTML = '<p>Error loading tournaments</p>';
+            }
+        }
+        
+        async function joinTournament(tournamentId) {
+            if (!currentUser) {
+                alert('Please login first!');
+                window.location.href = '/login';
+                return;
+            }
+            
+            const res = await fetch('/api/tournaments/join', {
+                method: 'POST', 
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ tournamentId })
+            });
+            const data = await res.json();
+            if(data.success) { 
+                alert('Joined tournament!'); 
+                loadTournaments(); 
+            } else { 
+                alert(' ' + (data.error || 'Failed')); 
+            }
+        }
+        
+        async function createTournament() {
+            if (!currentUser) {
+                alert('Please login first!');
+                window.location.href = '/login';
+                return;
+            }
+            
+            const name = document.getElementById('name').value;
+            const gameId = document.getElementById('gameId').value;
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+            const prizePool = document.getElementById('prizePool').value;
+            const description = document.getElementById('description').value;
+            
+            if(!name || !gameId || !startDate || !endDate) {
+                document.getElementById('createMsg').innerHTML = '<div class="message error">❌ Fill all fields</div>';
+                return;
+            }
+            
+            const res = await fetch('/api/tournaments/create', {
+                method: 'POST', 
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, gameId, startDate, endDate, prizePool, description })
+            });
+            const data = await res.json();
+            if(data.success) {
+                document.getElementById('createMsg').innerHTML = '<div class="message success"> Tournament created!</div>';
+                document.getElementById('name').value = '';
+                document.getElementById('prizePool').value = '';
+                document.getElementById('description').value = '';
+                loadTournaments();
+                setTimeout(() => document.getElementById('createMsg').innerHTML = '', 3000);
+            } else {
+                document.getElementById('createMsg').innerHTML = `<div class="message error"> ${data.error}</div>`;
+            }
+        }
+        
+        // Initialize
+        checkLogin();
+        loadTournaments();
+    </script>
+</body>
+</html>

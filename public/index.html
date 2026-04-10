@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>VoidGaming</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Poppins', sans-serif; background: #000000; color: white; position: relative; }
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: repeating-linear-gradient(45deg, rgba(255,215,0,0.03) 0px, rgba(255,215,0,0.03) 2px, transparent 2px, transparent 8px);
+            pointer-events: none;
+            z-index: 0;
+        }
+        nav { background: #000000; padding: 1rem 2rem; display: flex; justify-content: space-between; flex-wrap: wrap; border-bottom: 3px solid #FFD700; position: sticky; top: 0; z-index: 100; }
+        nav a { color: #FFD700; text-decoration: none; margin: 0 1rem; font-weight: bold; transition: all 0.3s ease; }
+        nav a:hover { color: #ffffff; text-shadow: 0 0 5px #FFD700; }
+        .container { max-width: 1200px; margin: 2rem auto; padding: 0 1rem; position: relative; z-index: 1; }
+        h1 { font-size: 2.5rem; color: #FFD700; text-shadow: 2px 2px 0 #000; border-left: 5px solid #FFD700; padding-left: 1rem; margin-bottom: 1rem; }
+        h2 { color: #FFD700; margin: 2rem 0 1rem 0; border-left: 4px solid #FFD700; padding-left: 1rem; }
+        .games-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.5rem; margin-top: 1rem; }
+        .game-card { background: #0a0a0a; padding: 1.5rem; border: 2px solid #FFD700; transition: all 0.3s ease; }
+        .game-card:hover { transform: translateY(-5px); border-color: #fff; }
+        .game-card h3 { color: #FFD700; margin-bottom: 0.5rem; }
+        button { background: #FFD700; color: #000; border: none; padding: 0.6rem 1.2rem; cursor: pointer; font-weight: 600; font-family: 'Poppins', sans-serif; margin-top: 10px; transition: all 0.3s ease; }
+        button:hover { background: #fff; transform: scale(1.02); }
+        .btn-group { display: flex; gap: 10px; margin-top: 10px; }
+        .btn-group button { flex: 1; margin-top: 0; }
+        table { width: 100%; border-collapse: collapse; background: #0a0a0a; border: 2px solid #FFD700; }
+        th { background: #FFD700; color: #000; padding: 10px; text-align: left; }
+        td { padding: 10px; border-bottom: 1px solid #FFD700; color: #ccc; }
+        .search-box { width: 100%; padding: 0.75rem; margin: 1rem 0; background: #000; border: 2px solid #FFD700; color: #FFD700; font-size: 1rem; }
+        .search-box:focus { outline: none; border-color: #fff; }
+        .search-box::placeholder { color: #666; }
+        @media (max-width: 600px) { nav { flex-direction: column; text-align: center; gap: 1rem; } .btn-group { flex-direction: column; } }
+    .filter-section {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 1rem 0;
+}
+
+.filter-btn {
+    background: #0a0a0a;
+    border: 2px solid #FFD700;
+    color: #FFD700;
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.filter-btn:hover, .filter-btn.active {
+    background: #FFD700;
+    color: #000;
+    transform: translateY(-2px);
+}
+    </style>
+</head>
+<body>
+    <nav>
+        <div style="font-size:1.5rem;">VoidGaming</div>
+        <div>
+            <a href="/">Home</a>
+            <a href="/games">Games</a>
+            <a href="/game-reviews">Reviews</a>
+            <a href="/game-tournaments">Tournaments</a>
+            <a href="/profile">Profile</a>
+            <span id="admin-link" style="display:none;"><a href="/admin">Admin</a></span>
+            <span id="auth-link"></span>
+        </div>
+    </nav>
+    <div class="container">
+        <h1>Welcome to VoidGaming</h1>
+        <p>Play, compete, and become a champion!</p>
+        
+        <input type="text" id="searchInput" class="search-box" placeholder="🔍 Search games by name..." onkeyup="filterGames()">
+
+        <div class="filter-section">
+    <button class="filter-btn active" onclick="filterByGenre('all')">All Games</button>
+    <button class="filter-btn" onclick="filterByGenre('Action')">Action</button>
+    <button class="filter-btn" onclick="filterByGenre('Arcade')">Arcade</button>
+    <button class="filter-btn" onclick="filterByGenre('Racing')">Racing</button>
+    <button class="filter-btn" onclick="filterByGenre('Puzzle')">Puzzle</button>
+    <button class="filter-btn" onclick="filterByGenre('Sports')">Sports</button>
+    <button class="filter-btn" onclick="filterByGenre('Adventure')">Adventure</button>
+    <button class="filter-btn" onclick="filterByGenre('Strategy')">Strategy</button>
+    <button class="filter-btn" onclick="filterByGenre('Horror')">Horror</button>
+    </div>
+        
+        <h2> Top Games</h2>
+        <div id="games-container">Loading games...</div>
+        
+        <h2> Leaderboard</h2>
+        <div id="leaderboard">Loading leaderboard...</div>
+    </div>
+
+    <script>
+        let allGames = [];
+        
+        async function checkLogin() {
+            try {
+                const res = await fetch('/check-session');
+                const data = await res.json();
+                const authLink = document.getElementById('auth-link');
+                const adminLink = document.getElementById('admin-link');
+                if (data.loggedIn) {
+                    authLink.innerHTML = ` ${data.username} | <a href="#" onclick="logout()">Logout</a>`;
+                    if (data.role === 'admin') adminLink.style.display = 'inline';
+                } else {
+                    authLink.innerHTML = '<a href="/login"> Login</a>';
+                }
+            } catch(e) { console.log(e); }
+        }
+        let currentGenre = 'all';
+
+function filterByGenre(genre) {
+    currentGenre = genre;
+    
+    // Update active button styling
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.textContent === genre || (genre === 'all' && btn.textContent === 'All Games')) {
+            btn.classList.add('active');
+        }
+    });
+    
+    // Filter games
+    let filtered = allGames;
+    if (genre !== 'all') {
+        filtered = allGames.filter(game => game.genre === genre);
+    }
+    displayGames(filtered);
+}
+        async function logout() {
+            await fetch('/logout', { method: 'POST' });
+            window.location.href = '/';
+        }
+        
+        async function loadGames() {
+            try {
+                const res = await fetch('/api/games');
+                allGames = await res.json();
+                console.log('Games loaded:', allGames.length);
+                displayGames(allGames);
+            } catch(e) {
+                console.error('Error:', e);
+                document.getElementById('games-container').innerHTML = '<p>Error loading games</p>';
+            }
+        }
+        
+        function displayGames(games) {
+            const container = document.getElementById('games-container');
+            if (!games || games.length === 0) {
+                container.innerHTML = '<p>No games found</p>';
+                return;
+            }
+            
+            let html = '<div class="games-grid">';
+            for (let game of games) {
+                const gameUrl = game.gameUrl || '';
+                html += `
+                    <div class="game-card">
+                        <h3> ${escapeHtml(game.title)}</h3>
+                        <p>  ${game.genre || 'Game'}</p>
+                        <p>  ${game.plays || 0} plays</p>
+                        <div class="btn-group">
+                            <button onclick="playNow('${escapeHtml(gameUrl)}')"> PLAY NOW</button>
+                            <button onclick="submitScore('${game._id}')"> SUBMIT SCORE</button>
+                        </div>
+                    </div>
+                `;
+            }
+            html += '</div>';
+            container.innerHTML = html;
+        }
+        
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/[&<>]/g, function(m) {
+                if (m === '&') return '&amp;';
+                if (m === '<') return '&lt;';
+                if (m === '>') return '&gt;';
+                return m;
+            });
+        }
+        
+        function filterGames() {
+            const term = document.getElementById('searchInput').value.toLowerCase();
+            const filtered = allGames.filter(g => g.title.toLowerCase().includes(term));
+            displayGames(filtered);
+        }
+        
+        async function playNow(gameUrl) {
+            if (!gameUrl) {
+                alert('No game link available');
+                return;
+            }
+            const session = await fetch('/check-session').then(r => r.json());
+            if (!session.loggedIn) {
+                if (confirm('You need to login first. Click OK to login.')) {
+                    window.location.href = '/login';
+                }
+                return;
+            }
+            window.open(gameUrl, '_blank');
+        }
+        
+        async function submitScore(gameId) {
+            const session = await fetch('/check-session').then(r => r.json());
+            if (!session.loggedIn) {
+                alert('Please login first to submit scores!');
+                window.location.href = '/login';
+                return;
+            }
+            const score = prompt('Enter your score (0-9999):');
+            if (!score) return;
+            if (isNaN(score) || score < 0 || score > 9999) {
+                alert('Score must be between 0 and 9999');
+                return;
+            }
+            try {
+                const res = await fetch('/api/score', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ gameId, score: parseInt(score) })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert(' Score submitted successfully!');
+                    loadLeaderboard();
+                } else {
+                    alert('Error: ' + (data.error || 'Unknown error'));
+                }
+            } catch(e) {
+                alert('Error submitting score');
+            }
+        }
+        
+        async function loadLeaderboard() {
+            try {
+                const res = await fetch('/api/leaderboard');
+                const leaders = await res.json();
+                const container = document.getElementById('leaderboard');
+                if (!leaders || leaders.length === 0) {
+                    container.innerHTML = '<p>No scores yet. Be the first!</p>';
+                    return;
+                }
+                let html = `<table><tr><th>Rank</th><th>Player</th><th>Total Score</th><th>Top Games</th></tr>`;
+                for (let i = 0; i < leaders.length; i++) {
+                    const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : '';
+                    const gamesDisplay = (leaders[i].gamesPlayed && leaders[i].gamesPlayed.length > 0) 
+                        ? leaders[i].gamesPlayed.join(', ') 
+                        : 'No games yet';
+                    html += `<tr>
+                        <td>${i+1}${medal}</td>
+                        <td>${escapeHtml(leaders[i].username)}</td>
+                        <td>${leaders[i].totalScore}</td>
+                        <td>${escapeHtml(gamesDisplay)}</td>
+                    </tr>`;
+                }
+                html += `<\/table>`;
+                container.innerHTML = html;
+            } catch(e) {
+                console.error('Leaderboard error:', e);
+                document.getElementById('leaderboard').innerHTML = '<p>Error loading leaderboard</p>';
+            }
+        }
+        
+        // Initialize
+        checkLogin();
+        loadGames();
+        loadLeaderboard();
+    </script>
+</body>
+</html>

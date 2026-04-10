@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Reviews - VoidGaming</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Poppins', sans-serif; background: #000000; color: white; position: relative; }
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: repeating-linear-gradient(45deg, rgba(255,215,0,0.03) 0px, rgba(255,215,0,0.03) 2px, transparent 2px, transparent 8px);
+            pointer-events: none;
+            z-index: 0;
+        }
+        nav { background: #000000; padding: 1rem 2rem; display: flex; justify-content: space-between; flex-wrap: wrap; border-bottom: 3px solid #FFD700; position: sticky; top: 0; z-index: 100; }
+        nav a { color: #FFD700; text-decoration: none; margin: 0 1rem; font-weight: bold; transition: all 0.3s ease; }
+        nav a:hover { color: #ffffff; text-shadow: 0 0 5px #FFD700; }
+        .container { max-width: 800px; margin: 2rem auto; padding: 0 1rem; position: relative; z-index: 1; }
+        h1 { font-size: 2rem; color: #FFD700; text-shadow: 2px 2px 0 #000; border-left: 5px solid #FFD700; padding-left: 1rem; margin-bottom: 1rem; }
+        select, textarea { width: 100%; padding: 0.75rem; margin: 0.5rem 0; background: #000; border: 2px solid #FFD700; color: #FFD700; font-family: monospace; }
+        select:focus, textarea:focus { outline: none; border-color: #fff; }
+        button { background: #FFD700; color: #000; border: none; padding: 0.6rem 1.2rem; cursor: pointer; font-weight: 600; font-family: 'Poppins', sans-serif; transition: all 0.3s ease; }
+        button:hover { background: #fff; transform: scale(1.05); box-shadow: 0 0 20px rgba(255,215,0,0.6); }
+        .review-card { background: #0a0a0a; padding: 1rem; margin: 1rem 0; border-left: 4px solid #FFD700; }
+        .star { cursor: pointer; font-size: 1.8rem; color: #444; display: inline-block; }
+        .star.selected { color: #FFD700; }
+        .message { padding: 0.5rem; margin: 0.5rem 0; text-align: center; }
+        .success { background: rgba(76,175,80,0.3); border: 1px solid #4caf50; color: #4caf50; }
+        .error { background: rgba(255,68,68,0.3); border: 1px solid #ff4444; color: #ff4444; }
+        .warning { background: rgba(255,152,0,0.3); border: 1px solid #ff9800; padding: 1rem; margin: 1rem 0; text-align: center; }
+        @media (max-width: 600px) { nav { flex-direction: column; text-align: center; gap: 1rem; } }
+    </style>
+</head>
+<body>
+    <div>
+    <nav>
+    <div style="font-size:1.5rem;"></div>
+    <div>
+        <a href="/">Home</a>
+        <a href="/games">Games</a>
+        <a href="/game-reviews">Reviews</a>
+        <a href="/game-tournaments">Tournaments</a>
+        <a href="/profile"> Profile</a>
+        <span id="admin-link" style="display:none;"><a href="/admin"> Admin</a></span>
+        <span id="auth-link"></span>
+    </div>
+</nav>
+    </div>
+    <div class="container">
+        <h1> GAME REVIEWS</h1>
+        <div id="loginWarning" class="warning" style="display:none;">
+            ⚠️ Please <a href="/login" style="color:#FFD700;">login</a> to write reviews</div>
+        <div id="reviewBox">
+            <select id="gameSelect" onchange="loadReviews()"><option value="">-- Select Game --</option></select>
+            <div id="stars">
+                <span class="star" data-r="1">★</span><span class="star" data-r="2">★</span><span class="star" data-r="3">★</span><span class="star" data-r="4">★</span><span class="star" data-r="5">★</span>
+            </div>
+            <textarea id="comment" rows="3" placeholder="Write your review..."></textarea>
+            <button onclick="submitReview()">SUBMIT REVIEW</button>
+            <div id="msg"></div>
+            <h3 style="margin-top:1rem; color:#FFD700;">📝 USER REVIEWS</h3>
+            <div id="reviewsList">Select a game</div>
+        </div>
+    </div>
+    <script>
+        let selectedRating = 0;
+        let isLoggedIn = false;
+        
+        document.querySelectorAll('.star').forEach(star => {
+            star.onclick = function() {
+                selectedRating = parseInt(this.dataset.r);
+                document.querySelectorAll('.star').forEach((s,i) => {
+                    if(i < selectedRating) s.classList.add('selected');
+                    else s.classList.remove('selected');
+                });
+            };
+        });
+        
+        async function checkLogin() {
+    try {
+        const res = await fetch('/check-session');
+        const data = await res.json();
+        const authLink = document.getElementById('auth-link');
+        const adminLink = document.getElementById('admin-link');
+        const loginWarning = document.getElementById('loginWarning');
+        const reviewSection = document.getElementById('reviewBox');
+        
+        if (data.loggedIn) {
+            isLoggedIn = true;  
+            authLink.innerHTML = ` ${data.username} | <a href="#" onclick="logout()">Logout</a>`;
+            if (data.role === 'admin' && adminLink) {
+                adminLink.style.display = 'inline';
+            }
+            
+            if (loginWarning) loginWarning.style.display = 'none';
+            if (reviewSection) reviewSection.style.display = 'block';
+            loadGames(); 
+        } else {
+            isLoggedIn = false;  
+            authLink.innerHTML = '<a href="/login"> Login</a>';
+            if (adminLink) adminLink.style.display = 'none';
+    
+            if (loginWarning) loginWarning.style.display = 'block';
+            if (reviewSection) reviewSection.style.display = 'none';
+        }
+    } catch(e) {
+        console.log(e);
+    }
+}
+        
+        async function logout() { await fetch('/logout', { method: 'POST' }); window.location.href = '/'; }
+        
+        async function loadGames() {
+            const res = await fetch('/api/games');
+            const games = await res.json();
+            const select = document.getElementById('gameSelect');
+            select.innerHTML = '<option value="">-- Select Game --</option>' + games.map(g => `<option value="${g._id}">${g.title}</option>`).join('');
+        }
+        
+        async function loadReviews() {
+            const gameId = document.getElementById('gameSelect').value;
+            if(!gameId) { document.getElementById('reviewsList').innerHTML = '<p>Select a game</p>'; return; }
+            const res = await fetch(`/api/reviews/${gameId}`);
+            const reviews = await res.json();
+            const container = document.getElementById('reviewsList');
+            if(reviews.length === 0) { container.innerHTML = '<p>No reviews yet</p>'; return; }
+            container.innerHTML = reviews.map(r => `<div class="review-card"><strong>${r.userId?.username}</strong><div>${'★'.repeat(r.rating)}</div><p>${r.comment}</p><small>${new Date(r.createdAt).toLocaleDateString()}</small></div>`).join('');
+        }
+        
+        async function submitReview() {
+            const gameId = document.getElementById('gameSelect').value;
+            const comment = document.getElementById('comment').value;
+            const msgDiv = document.getElementById('msg');
+            if(!gameId) { msgDiv.innerHTML = '<div class="message error">Select a game</div>'; return; }
+            if(!isLoggedIn) { msgDiv.innerHTML = '<div class="message error">Login required</div>'; return; }
+            if(selectedRating === 0) { msgDiv.innerHTML = '<div class="message error">Select rating</div>'; return; }
+            if(comment.length < 2) { msgDiv.innerHTML = '<div class="message error">Write a comment</div>'; return; }
+            const res = await fetch('/api/reviews', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ gameId, rating: selectedRating, comment })
+            });
+            const data = await res.json();
+            if(data.success) {
+                msgDiv.innerHTML = '<div class="message success">✅ Review submitted!</div>';
+                document.getElementById('comment').value = '';
+                selectedRating = 0;
+                document.querySelectorAll('.star').forEach(s => s.classList.remove('selected'));
+                loadReviews();
+                setTimeout(() => msgDiv.innerHTML = '', 3000);
+            } else {
+                msgDiv.innerHTML = `<div class="message error">❌ ${data.error}</div>`;
+            }
+        }
+        
+        checkLogin();
+    </script>
+</body>
+</html>

@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Signup - VoidGaming</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body { 
+            font-family: 'Poppins', 'Segoe UI', sans-serif;
+            background: #000000;
+            min-height: 100vh; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            position: relative;
+        }
+        
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: repeating-linear-gradient(
+                45deg,
+                rgba(255, 215, 0, 0.03) 0px,
+                rgba(255, 215, 0, 0.03) 2px,
+                transparent 2px,
+                transparent 8px
+            );
+            pointer-events: none;
+        }
+        
+        .container { 
+            max-width: 400px; 
+            padding: 2rem; 
+            background: #0a0a0a;
+            border: 2px solid #FFD700;
+            position: relative;
+            z-index: 1;
+            animation: fadeInUp 0.6s ease;
+        }
+        
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        h1 { 
+            text-align: center; 
+            color: #FFD700;
+            text-shadow: 2px 2px 0 #000000;
+            margin-bottom: 1.5rem;
+            letter-spacing: 2px;
+        }
+        
+        input, select { 
+            width: 100%; 
+            padding: 0.75rem; 
+            margin: 0.5rem 0; 
+            border: 2px solid #FFD700; 
+            background: #000000;
+            color: #FFD700;
+            font-family: 'Poppins', monospace;
+            font-size: 1rem;
+        }
+        
+        input:focus, select:focus {
+            outline: none;
+            border-color: #ffffff;
+        }
+        
+        input::placeholder {
+            color: #666;
+        }
+        
+        button { 
+            width: 100%; 
+            padding: 0.75rem; 
+            background: #FFD700;
+            color: #000000;
+            border: none;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            font-family: 'Poppins', sans-serif;
+            transition: all 0.3s ease;
+            margin-top: 1rem;
+        }
+        
+        button:hover {
+            background: #ffffff;
+            transform: scale(1.02);
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+        }
+        
+        .error { 
+            color: #ff6b6b; 
+            margin: 0.5rem 0; 
+            text-align: center; 
+            font-size: 0.9rem;
+        }
+        
+        .role-info {
+            font-size: 0.7rem;
+            color: #888;
+            text-align: center;
+            margin-top: -5px;
+            margin-bottom: 10px;
+        }
+        
+        a {
+            color: #FFD700;
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+        
+        a:hover {
+            color: #ffffff;
+            text-decoration: underline;
+        }
+        
+        p {
+            text-align: center;
+            margin-top: 1rem;
+            color: #cccccc;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📝 SIGN UP</h1>
+        <div id="error" class="error"></div>
+        
+        <input type="text" id="username" placeholder="Username" autocomplete="off">
+        <input type="email" id="email" placeholder="Email" autocomplete="off">
+        <input type="password" id="password" placeholder="Password (min 4 characters)">
+        
+        <select id="role">
+            <option value="player"> Player - Play games & write reviews</option>
+            <option value="organiser"> Organiser - Create tournaments</option>
+        </select>
+        <div class="role-info"> First user to sign up automatically becomes Admin</div>
+        
+        <button onclick="signup()">SIGN UP</button>
+        
+        <p>Already have an account? <a href="/login">LOGIN</a></p>
+        <p><a href="/">← BACK TO HOME</a></p>
+    </div>
+
+    <script>
+        async function signup() {
+            const username = document.getElementById('username').value.trim();
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value;
+            const role = document.getElementById('role').value;
+            const errorDiv = document.getElementById('error');
+            
+            errorDiv.innerHTML = '';
+            
+            // Username validation
+            if (!username) { errorDiv.innerHTML = '❌ Username is required'; return; }
+            if (username.length < 3) { errorDiv.innerHTML = '❌ Username must be at least 4 characters'; return; }
+            if (username.length > 20) { errorDiv.innerHTML = '❌ Username must be less than 20 characters'; return; }
+            if (!/^[a-zA-Z0-9_]+$/.test(username)) { errorDiv.innerHTML = '❌ Username can only contain letters, numbers, and underscore'; return; }
+            
+            // Email validation
+            if (!email) { errorDiv.innerHTML = '❌ Email is required'; return; }
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { errorDiv.innerHTML = '❌ Enter a valid email address'; return; }
+            
+            // Password validation
+            if (!password) { errorDiv.innerHTML = '❌ Password is required'; return; }
+            if (password.length < 6) { errorDiv.innerHTML = '❌ Password must be at least 6 characters'; return; }
+            if (password.length > 50) { errorDiv.innerHTML = '❌ Password must be less than 50 characters'; return; }
+            if (!/[A-Z]/.test(password)) { errorDiv.innerHTML = '❌ Password must contain at least one uppercase letter'; return; }
+            if (!/[0-9]/.test(password)) { errorDiv.innerHTML = '❌ Password must contain at least one number'; return; }
+            
+            // Role validation
+            if (!role) { errorDiv.innerHTML = '❌ Please select a role'; return; }
+            
+            // Disable button and show loading
+            const btn = event.target;
+            btn.disabled = true;
+            btn.textContent = 'Creating account...';
+            
+            try {
+                const response = await fetch('/signup', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, email, password, role })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    errorDiv.style.color = '#4caf50';
+                    errorDiv.innerHTML = '✅ Account created successfully! Redirecting...';
+                    setTimeout(() => {
+                        window.location.href = '/';
+                    }, 1500);
+                } else {
+                    errorDiv.style.color = '#ff6b6b';
+                    errorDiv.innerHTML = '❌ ' + (data.error || 'Signup failed!');
+                    btn.disabled = false;
+                    btn.textContent = 'SIGN UP';
+                }
+            } catch (error) {
+                errorDiv.style.color = '#ff6b6b';
+                errorDiv.innerHTML = '❌ Cannot connect to server. Make sure server is running!';
+                btn.disabled = false;
+                btn.textContent = 'SIGN UP';
+            }
+        }
+    </script>
+</body>
+</html>

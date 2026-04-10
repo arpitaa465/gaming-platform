@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Login - VoidGaming</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body { 
+            font-family: 'Poppins', 'Segoe UI', sans-serif;
+            background: #000000;
+            min-height: 100vh; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            position: relative;
+        }
+        
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: repeating-linear-gradient(
+                45deg,
+                rgba(255, 215, 0, 0.03) 0px,
+                rgba(255, 215, 0, 0.03) 2px,
+                transparent 2px,
+                transparent 8px
+            );
+            pointer-events: none;
+        }
+        
+        .container { 
+            max-width: 400px; 
+            padding: 2rem; 
+            background: #0a0a0a;
+            border: 2px solid #FFD700;
+            position: relative;
+            z-index: 1;
+            animation: fadeInUp 0.6s ease;
+        }
+        
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        h1 { 
+            text-align: center; 
+            color: #FFD700;
+            text-shadow: 2px 2px 0 #000000;
+            margin-bottom: 1.5rem;
+            letter-spacing: 2px;
+        }
+        
+        input { 
+            width: 100%; 
+            padding: 0.75rem; 
+            margin: 0.5rem 0; 
+            border: 2px solid #FFD700; 
+            background: #000000;
+            color: #FFD700;
+            font-family: 'Poppins', monospace;
+            font-size: 1rem;
+        }
+        
+        input:focus {
+            outline: none;
+            border-color: #ffffff;
+        }
+        
+        input::placeholder {
+            color: #666;
+        }
+        
+        button { 
+            width: 100%; 
+            padding: 0.75rem; 
+            background: #FFD700;
+            color: #000000;
+            border: none;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            font-family: 'Poppins', sans-serif;
+            transition: all 0.3s ease;
+            margin-top: 1rem;
+        }
+        
+        button:hover {
+            background: #ffffff;
+            transform: scale(1.02);
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+        }
+        
+        .error { 
+            color: #ff6b6b; 
+            margin: 0.5rem 0; 
+            text-align: center; 
+            font-size: 0.9rem;
+        }
+        
+        a {
+            color: #FFD700;
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+        
+        a:hover {
+            color: #ffffff;
+            text-decoration: underline;
+        }
+        
+        p {
+            text-align: center;
+            margin-top: 1rem;
+            color: #cccccc;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1> LOGIN</h1>
+        <div id="error" class="error"></div>
+        <input type="email" id="email" placeholder="Email" autocomplete="off">
+        <input type="password" id="password" placeholder="Password">
+        <button onclick="login()">LOGIN</button>
+        <p><a href="/forgot-password">Forgot Password?</a></p>
+        <p>Don't have an account? <a href="/signup">SIGNUP</a></p>
+        <p><a href="/">← BACK TO HOME</a></p>
+    </div>
+
+    <script>
+        async function login() {
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value;
+            const errorDiv = document.getElementById('error');
+            
+            errorDiv.innerHTML = '';
+            
+            if (!email || !password) {
+                errorDiv.innerHTML = ' All fields required!';
+                return;
+            }
+            
+            try {
+                const res = await fetch('/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+                
+                const data = await res.json();
+                
+                if (data.success) {
+                    window.location.href = '/';
+                } else {
+                    errorDiv.innerHTML = ' ' + (data.error || 'Invalid credentials');
+                }
+            } catch(error) {
+                errorDiv.innerHTML = ' Cannot connect to server';
+            }
+        }
+    </script>
+</body>
+</html>
