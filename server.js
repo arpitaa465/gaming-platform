@@ -20,7 +20,7 @@ app.use(session({
 }));
 
 // MongoDB Connection
-mongoose.connect('mongodb://localhost:27017/gamingDB')
+mongoose.connect('mongodb+srv://arpita:<db_password>@cluster0.sv40ki4.mongodb.net/?appName=Cluster0')
     .then(() => console.log(' MongoDB Connected'))
     .catch(err => console.log(' MongoDB Error:', err));
 
@@ -177,7 +177,7 @@ app.post('/api/score', async (req, res) => {
     await newScore.save();
     await User.findByIdAndUpdate(req.session.userId, { 
         $inc: { totalScore: score },
-        lastPlayed: new Date()  // ← ADD THIS LINE
+        lastPlayed: new Date()  
     });
     await Game.findByIdAndUpdate(gameId, { $inc: { plays: 1 } });
     res.json({ success: true });
